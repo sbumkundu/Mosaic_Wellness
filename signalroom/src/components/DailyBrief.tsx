@@ -15,6 +15,16 @@ interface Brief {
   cached: boolean;
 }
 
+const ACTION_ICONS: Record<string, string> = {
+  "Audit": "🚚",
+  "Flag": "⚕️",
+  "Escalate": "🔍",
+  "Pull": "📦",
+  "Address": "🚨",
+  "Monitor": "📊",
+  "Share": "📣",
+};
+
 export default function DailyBrief() {
   const [brief, setBrief] = useState<Brief | null>(null);
   const [loading, setLoading] = useState(true);
@@ -139,6 +149,29 @@ export default function DailyBrief() {
         </div>
       </div>
 
+      {/* Priority Actions — always visible, top of brief */}
+      {brief.actions.length > 0 && (
+        <div className="mb-3 p-3 rounded-xl bg-orange-950/30 border border-orange-800/40">
+          <p className="text-[10px] font-semibold text-orange-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Priority Actions for Today
+          </p>
+          <div className="space-y-1.5">
+            {brief.actions.slice(0, 3).map((action, i) => {
+              const icon = Object.entries(ACTION_ICONS).find(([k]) => action.startsWith(k))?.[1] ?? "→";
+              return (
+                <div key={i} className="flex gap-2 text-xs">
+                  <span className="shrink-0 mt-0.5">{icon}</span>
+                  <p className="text-orange-100/80 leading-snug">{action}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Brief sentences */}
       <div className="space-y-2">
         {(showFull ? brief.sentences : brief.sentences.slice(0, 3)).map((sentence, i) => (
@@ -156,21 +189,6 @@ export default function DailyBrief() {
           </button>
         )}
       </div>
-
-      {/* Recommended actions (only when expanded) */}
-      {showFull && brief.actions.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-gray-700/60">
-          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Recommended Actions</p>
-          <div className="space-y-1.5">
-            {brief.actions.map((action, i) => (
-              <div key={i} className="flex gap-2 text-xs">
-                <span className="text-orange-400 shrink-0 mt-0.5">→</span>
-                <p className="text-gray-300">{action}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -191,5 +191,85 @@ async function generateAlerts(source: string, windowHours: number): Promise<numb
     alertCount++;
   }
 
+  // 4. Early Warning: rising velocity not yet at spike threshold (predicts crisis 24-48h out)
+  // Split recent window: last 6h vs prior 18h — flag if acceleration is 1.3x–2.4x
+  const earlyWarnStart = new Date(dataEnd - 6 * 3600000);
+
+  const ewGroups = new Map<string, {
+    last6h: typeof recentMentions;
+    prev18h: typeof recentMentions;
+    baseline: typeof baselineMentions;
+  }>();
+
+  for (const m of recentMentions) {
+    const key = `${m.product || "general"}__${m.topIssue || "unknown"}__${m.channel}`;
+    if (!ewGroups.has(key)) ewGroups.set(key, { last6h: [], prev18h: [], baseline: [] });
+    const ts = new Date(m.timestamp).getTime();
+    if (ts >= earlyWarnStart.getTime()) {
+      ewGroups.get(key)!.last6h.push(m);
+    } else {
+      ewGroups.get(key)!.prev18h.push(m);
+    }
+  }
+  for (const m of baselineMentions) {
+    const key = `${m.product || "general"}__${m.topIssue || "unknown"}__${m.channel}`;
+    if (ewGroups.has(key)) ewGroups.get(key)!.baseline.push(m);
+  }
+
+  for (const [key, { last6h, prev18h, baseline }] of Array.from(ewGroups)) {
+    const [product, issue, channel] = key.split("__");
+    if (last6h.length < 2) continue;
+
+    const last6hNeg = last6h.filter(m => m.sentimentLabel === "neg").length;
+    const prev18hNeg = prev18h.filter(m => m.sentimentLabel === "neg").length;
+    const last6hRate = last6hNeg / 6; // negative mentions per hour
+    const prev18hRate = prev18h.length > 0 ? prev18hNeg / 18 : 0;
+
+    if (last6hRate === 0) continue;
+
+    const velocityRatio = prev18hRate > 0 ? last6hRate / prev18hRate : (last6hNeg >= 2 ? 1.8 : 0);
+    if (velocityRatio < 1.3 || velocityRatio >= 2.5) continue; // outside early warning band
+
+    // Compute baseline daily rate for ETA estimation
+    const baselineNeg = baseline.filter(m => m.sentimentLabel === "neg").length;
+    const baselineRate = baselineNeg / (13 * 24); // per hour over 13 days
+    const spikeThresholdRate = Math.max(baselineRate * 2.5, last6hRate * 1.5);
+
+    // ETA: linear extrapolation based on hourly acceleration
+    const hourlyAcceleration = (last6hRate - prev18hRate) / 12;
+    let etaHours: number;
+    if (hourlyAcceleration > 0) {
+      etaHours = Math.ceil((spikeThresholdRate - last6hRate) / hourlyAcceleration);
+      etaHours = Math.max(6, Math.min(48, etaHours));
+    } else {
+      etaHours = 36; // stable rising — default 36h estimate
+    }
+
+    const confidence = Math.min(0.72, 0.35 + velocityRatio * 0.12);
+    const repIds = last6h
+      .filter(m => m.sentimentLabel === "neg")
+      .sort((a, b) => (b.engagement || 0) - (a.engagement || 0))
+      .slice(0, 5)
+      .map(m => m.id);
+
+    await prisma.crisisAlert.create({
+      data: {
+        type: "early_warning",
+        product: product !== "general" ? product : null,
+        channel: channel !== "unknown" ? channel : null,
+        issue: issue !== "unknown" ? issue : null,
+        magnitude: Math.round(velocityRatio * 10) / 10,
+        confidence: Math.round(confidence * 100) / 100,
+        blastRadius: velocityRatio >= 2.0 ? "watch" : "contained",
+        since: earlyWarnStart,
+        representativeMentionIds: JSON.stringify(repIds),
+        status: "active",
+        summary: `Velocity rising ${velocityRatio.toFixed(1)}× on ${channel} for ${issue} — est. ${etaHours}h to spike threshold`,
+        playbook: issue && getPlaybook(issue) ? JSON.stringify(getPlaybook(issue)) : null,
+      },
+    });
+    alertCount++;
+  }
+
   return alertCount;
 }

@@ -13,6 +13,13 @@ interface EvalData {
   coverageChannels: number;
 }
 
+interface AccuracyData {
+  overall: { total: number; correct: number; accuracy: number };
+  byLanguage: Array<{ language: string; accuracy: number; tested: number }>;
+  byTone: Array<{ tone: string; accuracy: number; tested: number }>;
+  methodology: string[];
+}
+
 const CHANNEL_LABELS: Record<string, string> = {
   amazon: "Amazon", nykaa: "Nykaa", google: "Google",
   reddit: "Reddit", twitter: "Twitter", instagram: "Instagram", complaints: "Complaints",
@@ -38,18 +45,21 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }
 
 export default function EvaluationPage() {
   const [data, setData] = useState<EvalData | null>(null);
+  const [accuracy, setAccuracy] = useState<AccuracyData | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const fetch_ = async () => {
       try {
-        const [feedRes, alertRes] = await Promise.all([
+        const [feedRes, alertRes, accuracyRes] = await Promise.all([
           fetch("/api/feed?limit=0"),
           fetch("/api/crisis/alerts"),
+          fetch("/api/evaluation/sentiment-accuracy"),
         ]);
         const feedData = await feedRes.json();
         const alertData = await alertRes.json();
+        const accuracyData = await accuracyRes.json();
 
         const channelRes = await fetch("/api/feed?limit=200");
         const channelData = await channelRes.json();
@@ -78,6 +88,7 @@ export default function EvaluationPage() {
           simulatedCount: simCount,
           coverageChannels: Object.keys(byChannel).length,
         });
+        setAccuracy(accuracyData);
       } catch {}
       setLoading(false);
     };
@@ -241,6 +252,106 @@ export default function EvaluationPage() {
                 </div>
               </div>
             </section>
+
+            {/* Sentiment Accuracy Benchmark */}
+            {accuracy && (
+              <section>
+                <SectionHeader
+                  title="Sentiment Analysis Accuracy"
+                  subtitle={`Benchmarked against ${accuracy.overall.total} labelled test cases across English and Hindi/Hinglish`}
+                />
+                {/* Overall accuracy hero */}
+                <div className="panel p-4 mb-4 flex items-center gap-6">
+                  <div className="flex flex-col items-center justify-center w-20 h-20 rounded-full border-2 shrink-0"
+                    style={{ borderColor: accuracy.overall.accuracy >= 85 ? "#10b981" : "#f59e0b" }}>
+                    <span className="text-2xl font-bold" style={{ color: accuracy.overall.accuracy >= 85 ? "#10b981" : "#f59e0b" }}>
+                      {accuracy.overall.accuracy}%
+                    </span>
+                    <span className="text-[9px] text-gray-500 mt-0.5">accuracy</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-200 mb-1">
+                      {accuracy.overall.correct}/{accuracy.overall.total} test cases correctly classified
+                    </p>
+                    <p className="text-xs text-gray-400 mb-3">
+                      {accuracy.overall.accuracy >= 85
+                        ? "✓ Meets the ≥85% accuracy threshold across all languages and tones"
+                        : "Below 85% threshold — review word lists for edge cases"}
+                    </p>
+                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden w-full max-w-xs">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${accuracy.overall.accuracy}%`,
+                          backgroundColor: accuracy.overall.accuracy >= 85 ? "#10b981" : "#f59e0b",
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {/* By language */}
+                  <div className="panel p-4">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">By Language</p>
+                    <div className="space-y-3">
+                      {accuracy.byLanguage.map(({ language, accuracy: acc, tested }) => (
+                        <div key={language}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs text-gray-300 font-medium">{language}</span>
+                            <span className="text-xs font-semibold" style={{ color: acc >= 85 ? "#10b981" : "#f59e0b" }}>
+                              {acc}% <span className="text-gray-600 font-normal">({tested} samples)</span>
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${acc}%`, backgroundColor: acc >= 85 ? "#10b981" : "#f59e0b" }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* By tone */}
+                  <div className="panel p-4">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">By Tone</p>
+                    <div className="space-y-3">
+                      {accuracy.byTone.map(({ tone, accuracy: acc, tested }) => (
+                        <div key={tone}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs text-gray-300 font-medium">{tone}</span>
+                            <span className="text-xs font-semibold" style={{ color: acc >= 80 ? "#10b981" : "#f59e0b" }}>
+                              {acc}% <span className="text-gray-600 font-normal">({tested} samples)</span>
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${acc}%`, backgroundColor: acc >= 80 ? "#10b981" : "#f59e0b" }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Methodology */}
+                <div className="panel p-4">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">How Sentiment Is Computed</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1.5">
+                    {accuracy.methodology.map((m, i) => (
+                      <div key={i} className="flex gap-2 text-xs">
+                        <span className="text-cyan-500 shrink-0">✓</span>
+                        <span className="text-gray-400">{m}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
 
             {/* Case studies */}
             <section>

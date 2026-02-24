@@ -56,6 +56,7 @@ const TYPE_LABELS: Record<string, string> = {
   cross_channel: "Cross-Channel",
   high_reach: "High Reach",
   sentiment_drop: "Sentiment Drop",
+  early_warning: "Predictive Signal",
 };
 
 export default function CrisisRadar({ onAlertSelect }: { onAlertSelect?: (id: string) => void }) {
@@ -93,6 +94,8 @@ export default function CrisisRadar({ onAlertSelect }: { onAlertSelect?: (id: st
   };
 
   const criticalCount = alerts.filter(a => a.blastRadius === "high_risk").length;
+  const activeAlerts = alerts.filter(a => a.type !== "early_warning");
+  const earlyWarnings = alerts.filter(a => a.type === "early_warning");
 
   return (
     <div className="panel flex flex-col h-full">
@@ -164,7 +167,65 @@ export default function CrisisRadar({ onAlertSelect }: { onAlertSelect?: (id: st
           </div>
         )}
 
-        {alerts.map(alert => {
+        {/* Predictive Signals — early warnings before threshold */}
+        {!loading && earlyWarnings.length > 0 && (
+          <div className="mb-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-400/80 px-1 mb-1.5 flex items-center gap-1.5">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2L2 19h20L12 2z" strokeLinecap="round" strokeLinejoin="round"/>
+                <line x1="12" y1="9" x2="12" y2="13" strokeLinecap="round"/>
+                <circle cx="12" cy="17" r="0.5" fill="currentColor"/>
+              </svg>
+              Predictive Signals · 24-48h outlook
+            </p>
+            {earlyWarnings.map(alert => {
+              const etaMatch = alert.summary?.match(/est\. (\d+)h to spike/);
+              const etaHours = etaMatch ? parseInt(etaMatch[1]) : null;
+              return (
+                <div
+                  key={alert.id}
+                  onClick={() => { onAlertSelect?.(alert.id); router.push(`/incidents/${alert.id}`); }}
+                  className="rounded-xl border border-amber-800/50 bg-amber-950/20 p-3 cursor-pointer hover:brightness-110 transition-all mb-2"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-900/50 text-amber-300 border border-amber-700/50">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                        Predictive
+                      </span>
+                      {alert.issue && (
+                        <span className="text-[11px] text-gray-400 bg-gray-800/80 px-2 py-0.5 rounded-md border border-gray-700/50">
+                          {alert.issue.replace(/_/g, " ")}
+                        </span>
+                      )}
+                    </div>
+                    {etaHours && (
+                      <span className="text-[11px] font-mono text-amber-400 shrink-0">
+                        ~{etaHours}h
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-300 leading-relaxed mb-1.5">
+                    {alert.summary}
+                  </p>
+                  <div className="flex items-center justify-between text-[10px] text-gray-500">
+                    <span>{alert.channel && `📡 ${alert.channel}`}</span>
+                    <span className="text-amber-400/70">{Math.round(alert.confidence * 100)}% confidence · Open Incident Room →</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Active alerts section label */}
+        {!loading && activeAlerts.length > 0 && earlyWarnings.length > 0 && (
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-red-400/80 px-1 mb-1.5">
+            Active Alerts
+          </p>
+        )}
+
+        {activeAlerts.map(alert => {
           const cfg = BLAST_CONFIG[alert.blastRadius] || BLAST_CONFIG.contained;
           const since = new Date(alert.since).toLocaleString("en-IN", {
             month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
