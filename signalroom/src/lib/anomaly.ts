@@ -61,7 +61,7 @@ export function detectAnomaly(
   }
   
   const baselineValues = baselinePoints.map(p => p[metric]);
-  const currentTotal = currentPoints.reduce((s, p) => s + p[metric], 0);
+  const currentTotal = currentPoints.reduce((s: number, p: TimeSeriesPoint) => s + p[metric], 0);
   const currentAvg = currentPoints.length > 0 ? currentTotal / currentPoints.length : 0;
   
   // For sentiment, lower is worse (anomalous)
@@ -79,7 +79,7 @@ export function detectAnomaly(
   ));
   
   // Magnitude: ratio to baseline mean
-  const baselineMean = baselineValues.reduce((s, v) => s + v, 0) / baselineValues.length;
+  const baselineMean = baselineValues.reduce((s: number, v: number) => s + v, 0) / baselineValues.length;
   const magnitude = baselineMean > 0 ? currentAvg / baselineMean : currentAvg > 0 ? 3 : 1;
   
   const isAnomaly = (Math.abs(zScore) > 2.5 || Math.abs(ewmaScore) > 3) && currentAvg > 0;

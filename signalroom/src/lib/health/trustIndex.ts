@@ -153,7 +153,7 @@ export async function computeDailyBrandHealth(
 
   const volume = mentions.length;
   const sentimentIndex =
-    volume > 0 ? mentions.reduce((s, m) => s + m.sentimentScore, 0) / volume : 0;
+    volume > 0 ? mentions.reduce((s: number, m: (typeof mentions)[number]) => s + m.sentimentScore, 0) / volume : 0;
 
   const counts: Record<keyof TrustSignals, number> = {
     refundMention: 0, fakeClaim: 0, churnIntent: 0, supportFailure: 0, fraudClaim: 0,

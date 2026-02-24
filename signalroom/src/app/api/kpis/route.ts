@@ -46,11 +46,12 @@ export async function GET(req: NextRequest) {
   const negRatio = allMentions.length > 0 ? negVolume / allMentions.length : 0;
 
   // Credibility-weighted sentiment
+  type MRow = (typeof allMentions)[number];
   const weightedSentiment = allMentions.length > 0
-    ? allMentions.reduce((s, m) => s + m.sentimentScore * (m.credibilityScore / 100), 0) / allMentions.length
+    ? allMentions.reduce((s: number, m: MRow) => s + m.sentimentScore * (m.credibilityScore / 100), 0) / allMentions.length
     : 0;
   const avgSentiment = allMentions.length > 0
-    ? allMentions.reduce((s, m) => s + m.sentimentScore, 0) / allMentions.length
+    ? allMentions.reduce((s: number, m: MRow) => s + m.sentimentScore, 0) / allMentions.length
     : 0;
 
   const healthScore = computeHealthScore(avgSentiment, negRatio, weightedSentiment);

@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
   let topDifferentiatingIssue = null;
   if (myData && compData.length > 0) {
     const myScore = myData.healthScore;
-    const avgCompScore = compData.reduce((s, b) => s + b.healthScore, 0) / compData.length;
+    const avgCompScore = compData.reduce((s: number, b: (typeof compData)[number]) => s + b.healthScore, 0) / compData.length;
     if (myScore < avgCompScore) {
       topDifferentiatingIssue = myData.topIssue;
     }

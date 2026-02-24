@@ -525,6 +525,6 @@ export async function runIngestion(source = "MosaicWellness"): Promise<Ingestion
 
   await buildHourlyAggregates();
 
-  const total = Object.values(byChannel).reduce((s, v) => s + v, 0);
+  const total = Object.values(byChannel).reduce((s: number, v: number) => s + v, 0);
   return { total, byChannel, errors, durationMs: Date.now() - start };
 }

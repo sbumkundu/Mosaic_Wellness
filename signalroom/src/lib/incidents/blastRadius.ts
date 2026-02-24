@@ -67,12 +67,13 @@ export async function computeBlastRadius(incidentId: string): Promise<BlastRadiu
   const reasonCodes: string[] = [];
 
   // 1. Sentiment severity score (0-25)
-  const avgSentiment = mentions.reduce((s, m) => s + m.sentimentScore, 0) / mentions.length;
+  type MRow = (typeof mentions)[number];
+  const avgSentiment = mentions.reduce((s: number, m: MRow) => s + m.sentimentScore, 0) / mentions.length;
   const sentimentScore = Math.min(25, Math.max(0, (-avgSentiment + 1) / 2 * 25));
   if (avgSentiment < -0.5) reasonCodes.push("Highly negative average sentiment");
 
   // 2. Engagement velocity (0-25)
-  const totalEngagement = mentions.reduce((s, m) => s + m.engagement, 0);
+  const totalEngagement = mentions.reduce((s: number, m: MRow) => s + m.engagement, 0);
   const velocity = computeVelocity(mentions.length, windowHours);
   const engagementScore = Math.min(25, (Math.log1p(totalEngagement) / Math.log1p(5000)) * 15 + (Math.log1p(velocity) / Math.log1p(10)) * 10);
   if (velocity > 2) reasonCodes.push(`High mention velocity (${velocity.toFixed(1)}/hr)`);
@@ -108,7 +109,7 @@ export async function computeBlastRadius(incidentId: string): Promise<BlastRadiu
   const etaToCrossChannelHours = channels.length >= 2 ? null : minEta; // already spread if multi-channel
 
   // Expected reach: proxy from velocity × channel multiplier
-  const channelMultiplier = channels.reduce((sum, ch) => sum + (CHANNEL_RISK[ch] || 0.5), 0) / channels.length;
+  const channelMultiplier = channels.reduce((sum: number, ch: string) => sum + (CHANNEL_RISK[ch] || 0.5), 0) / channels.length;
   const baseReach = totalEngagement + mentions.length * 10;
   const expectedReach24h = Math.round(baseReach * channelMultiplier * 1.5);
   const expectedReach48h = Math.round(baseReach * channelMultiplier * 3.2);

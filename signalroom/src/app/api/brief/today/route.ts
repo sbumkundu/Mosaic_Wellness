@@ -33,8 +33,10 @@ export async function GET(req: NextRequest) {
     prisma.competitor.findMany(),
   ]);
 
-  const avgSentiment24h = recent24h.length > 0 ? recent24h.reduce((s, m) => s + m.sentimentScore, 0) / recent24h.length : 0;
-  const avgSentiment7d = recent7d.length > 0 ? recent7d.reduce((s, m) => s + m.sentimentScore, 0) / recent7d.length : 0;
+  type R24 = (typeof recent24h)[number];
+  type R7 = (typeof recent7d)[number];
+  const avgSentiment24h = recent24h.length > 0 ? recent24h.reduce((s: number, m: R24) => s + m.sentimentScore, 0) / recent24h.length : 0;
+  const avgSentiment7d = recent7d.length > 0 ? recent7d.reduce((s: number, m: R7) => s + m.sentimentScore, 0) / recent7d.length : 0;
   const healthScore = Math.round(50 + avgSentiment24h * 30 - (recent24h.filter(m => m.sentimentLabel === "neg").length / Math.max(recent24h.length, 1)) * 25);
   const trend = avgSentiment24h > avgSentiment7d + 0.05 ? "improving" : avgSentiment24h < avgSentiment7d - 0.05 ? "declining" : "stable";
 
@@ -57,7 +59,7 @@ export async function GET(req: NextRequest) {
   
   let compComparison = "No competitor data available.";
   if (compMentions.length > 0) {
-    const compAvg = compMentions.reduce((s, m) => s + m.sentimentScore, 0) / compMentions.length;
+    const compAvg = compMentions.reduce((s: number, m: (typeof compMentions)[number]) => s + m.sentimentScore, 0) / compMentions.length;
     const compDiff = avgSentiment7d - compAvg;
     if (compDiff > 0.1) {
       compComparison = `Brand sentiment is +${(compDiff * 100).toFixed(0)}pts above competitor average, led by ${competitors[0]?.name || "competition"}.`;

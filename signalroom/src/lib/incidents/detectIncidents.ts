@@ -119,8 +119,9 @@ export async function detectIncidents(opts: DetectOptions): Promise<DetectedInci
 
     // Need at least some baseline; fall back to a minimum threshold check
     const anomaly = detectAnomaly(bpMapped, wpMapped, "negCount");
-    const windowNeg = windowPoints.reduce((s, r) => s + r.negCount, 0);
-    const windowTotal = windowPoints.reduce((s, r) => s + r.count, 0);
+    type WRow = (typeof windowPoints)[number];
+    const windowNeg = windowPoints.reduce((s: number, r: WRow) => s + r.negCount, 0);
+    const windowTotal = windowPoints.reduce((s: number, r: WRow) => s + r.count, 0);
     const negShare = windowTotal > 0 ? windowNeg / windowTotal : 0;
 
     // Also check trust-signal spike in window mentions
