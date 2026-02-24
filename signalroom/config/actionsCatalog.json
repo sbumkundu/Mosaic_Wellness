@@ -1,0 +1,58 @@
+{
+  "actions": [
+    {
+      "id": "do_nothing",
+      "label": "Do Nothing",
+      "description": "Take no action — observe organic resolution",
+      "icon": "⏸",
+      "dampingFactor": 0,
+      "trustRecoveryRate": 0,
+      "narrativeRiskReduction": 0
+    },
+    {
+      "id": "refunds",
+      "label": "Issue Refunds",
+      "description": "Proactively refund affected customers",
+      "icon": "💰",
+      "dampingFactor": 0.35,
+      "trustRecoveryRate": 0.40,
+      "narrativeRiskReduction": 0.20
+    },
+    {
+      "id": "public_statement",
+      "label": "Public Statement",
+      "description": "Publish transparent acknowledgment + remediation plan",
+      "icon": "📢",
+      "dampingFactor": 0.25,
+      "trustRecoveryRate": 0.30,
+      "narrativeRiskReduction": 0.45
+    },
+    {
+      "id": "recall",
+      "label": "Product Recall",
+      "description": "Recall affected batch and offer replacements",
+      "icon": "🔴",
+      "dampingFactor": 0.55,
+      "trustRecoveryRate": 0.50,
+      "narrativeRiskReduction": 0.35
+    },
+    {
+      "id": "partner_switch",
+      "label": "Switch Delivery Partner",
+      "description": "Change logistics vendor for affected regions",
+      "icon": "🚚",
+      "dampingFactor": 0.40,
+      "trustRecoveryRate": 0.35,
+      "narrativeRiskReduction": 0.10
+    },
+    {
+      "id": "support_sla_change",
+      "label": "Support SLA Change",
+      "description": "Reduce response time SLA and add dedicated agents",
+      "icon": "🎯",
+      "dampingFactor": 0.20,
+      "trustRecoveryRate": 0.45,
+      "narrativeRiskReduction": 0.15
+    }
+  ]
+}

@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Mention {
+  id              String   @id @default(uuid())
+  source          String
+  channel         String
+  authorHandle    String?
+  timestamp       DateTime
+  language        String   @default("en")
+  text            String
+  product         String?
+  sku             String?
+  orderId         String?
+  deliveryPartner String?
+  location        String?
+  rating          Float?
+  engagement      Int      @default(0)
+  url             String?
+  sentimentScore  Float    @default(0)
+  sentimentLabel  String   @default("neutral")
+  issueLabels     String   @default("[]")
+  topIssue        String?
+  credibilityScore Int     @default(50)
+  entities        String   @default("{}")
+  isSimulated     Boolean  @default(false)
+  blastRadius     String   @default("contained")
+  hasSarcasm      Boolean  @default(false)
+  narrativeId     String?
+  createdAt       DateTime @default(now())
+
+  // Engagement breakdown (nullable — populated from rich sources)
+  likes               Int?
+  comments            Int?
+  shares              Int?
+  views               Int?
+  authorFollowerCount Int?
+  authorKarma         Int?
+
+  // Trust signals (computed during ingestion / backfill)
+  refundMention  Boolean @default(false)
+  fakeClaim      Boolean @default(false)
+  churnIntent    Boolean @default(false)
+  supportFailure Boolean @default(false)
+  fraudClaim     Boolean @default(false)
+
+  @@index([channel])
+  @@index([timestamp])
+  @@index([source])
+  @@index([topIssue])
+  @@index([sentimentLabel])
+}
+
+model Product {
+  id        String   @id @default(uuid())
+  name      String
+  sku       String?  @unique
+  brand     String
+  category  String?
+  createdAt DateTime @default(now())
+}
+
+model Competitor {
+  id    String @id @default(uuid())
+  name  String @unique
+  brand String
+}
+
+model CrisisAlert {
+  id                       String   @id @default(uuid())
+  type                     String
+  product                  String?
+  channel                  String?
+  issue                    String?
+  magnitude                Float
+  confidence               Float
+  blastRadius              String   @default("watch")
+  since                    DateTime
+  representativeMentionIds String   @default("[]")
+  status                   String   @default("active")
+  summary                  String?
+  playbook                 String?
+  createdAt                DateTime @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model DailyBrief {
+  id        String   @id @default(uuid())
+  date      String
+  content   String
+  createdAt DateTime @default(now())
+
+  @@unique([date])
+}
+
+model NarrativeCluster {
+  id         String   @id @default(uuid())
+  title      String
+  mentionIds String   @default("[]")
+  products   String   @default("[]")
+  topIssue   String
+  firstSeen  DateTime
+  growthRate Float    @default(0)
+  createdAt  DateTime @default(now())
+}
+
+model HourlyAggregate {
+  id              String   @id @default(uuid())
+  hour            String
+  source          String
+  product         String
+  channel         String
+  issue           String
+  count           Int      @default(0)
+  negCount        Int      @default(0)
+  avgSentiment    Float    @default(0)
+  totalEngagement Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@unique([hour, source, product, channel, issue])
+  @@index([hour])
+  @@index([issue])
+}
+
+// ─── Mission Control: Incident models ────────────────────────────────────────
+
+model Incident {
+  id            String   @id @default(uuid())
+  brandId       String
+  productId     String?
+  title         String
+  status        String   @default("active")   // active | investigating | resolved | dismissed
+  severity      String   @default("medium")    // low | medium | high | critical
+  createdAt     DateTime @default(now())
+  windowStart   DateTime
+  windowEnd     DateTime
+  baselineStart DateTime
+  baselineEnd   DateTime
+  primaryChannel String?
+  summary       String?
+
+  clusters          IncidentCluster[]
+  blastRadius       IncidentBlastRadius?
+  narrativeRisk     IncidentNarrativeRisk?
+  simulations       IncidentSimulation[]
+  suggestedResponses IncidentSuggestedResponse[]
+
+  @@index([brandId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([severity])
+}
+
+model IncidentCluster {
+  id              String   @id @default(uuid())
+  incidentId      String
+  clusterKey      String
+  size            Int      @default(0)
+  summary         String
+  topTermsJson    String   @default("[]")
+  topEntitiesJson String   @default("[]")
+  deltaVsBaseline Float    @default(1.0)
+  examplesJson    String   @default("[]")
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
+
+model IncidentBlastRadius {
+  id                      String   @id @default(uuid())
+  incidentId              String   @unique
+  impactScore             Float    @default(0)
+  etaToCrossChannelHours  Float?
+  expectedReach24h        Float?
+  expectedReach48h        Float?
+  propagationPathJson     String   @default("[]")
+  reasonCodesJson         String   @default("[]")
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+}
+
+model IncidentNarrativeRisk {
+  id             String   @id @default(uuid())
+  incidentId     String   @unique
+  riskScore      Float    @default(0)
+  riskLevel      String   @default("LOW")  // LOW | MED | HIGH
+  topTriggersJson String  @default("[]")
+  examplesJson   String   @default("[]")
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+}
+
+model IncidentSimulation {
+  id                   String   @id @default(uuid())
+  incidentId           String
+  actionType           String
+  seriesJson           String   @default("[]")
+  confidence           Float    @default(0.5)
+  matchedIncidentsJson String   @default("[]")
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
+
+model IncidentSuggestedResponse {
+  id            String   @id @default(uuid())
+  incidentId    String
+  channel       String
+  taxonomy      String
+  brandVoice    String   @default("professional")
+  responseText  String
+  checklistJson String   @default("[]")
+  redFlagsJson  String   @default("[]")
+  createdAt     DateTime @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
+
+model DailyBrandHealth {
+  id                  String   @id @default(uuid())
+  brandId             String
+  date                String
+  sentimentIndex      Float    @default(0)
+  volume              Int      @default(0)
+  trustIndex          Float    @default(50)
+  trustBreakdownJson  String   @default("{}")
+  narrativeRiskIndex  Float    @default(0)
+  createdAt           DateTime @default(now())
+
+  @@unique([brandId, date])
+  @@index([brandId])
+  @@index([date])
+}
+
+model CompetitorIncident {
+  id           String   @id @default(uuid())
+  competitorId String
+  windowStart  DateTime
+  windowEnd    DateTime
+  summary      String
+  topIssuesJson String  @default("[]")
+  riskScore    Float    @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([competitorId])
+  @@index([createdAt])
+}
+
+model CompetitorOpportunity {
+  id                String   @id @default(uuid())
+  brandId           String
+  competitorId      String
+  summary           String
+  recommendedAction String
+  evidenceJson      String   @default("[]")
+  createdAt         DateTime @default(now())
+
+  @@index([brandId])
+  @@index([competitorId])
+}

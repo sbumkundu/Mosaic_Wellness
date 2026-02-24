@@ -1,0 +1,70 @@
+{
+  "forbiddenPhrases": [
+    "it's not our fault",
+    "you should have",
+    "nothing we can do",
+    "policy doesn't allow",
+    "that's just how it is",
+    "everyone gets this",
+    "you're overreacting",
+    "calm down",
+    "fake news"
+  ],
+  "requiredElementsByTaxonomy": {
+    "delivery": {
+      "required": ["apology", "resolution_timeline", "escalation_path"],
+      "optional": ["compensation_offer", "order_reference_request"]
+    },
+    "packaging": {
+      "required": ["apology", "photo_request", "replacement_offer"],
+      "optional": ["quality_commitment"]
+    },
+    "product_quality": {
+      "required": ["apology", "batch_number_request", "investigation_promise"],
+      "optional": ["replacement_offer", "qa_team_mention"]
+    },
+    "side_effects": {
+      "required": ["safety_priority_statement", "discontinue_use_advice", "doctor_consult_advice", "batch_number_request"],
+      "optional": ["medical_cost_offer", "regulatory_mention"]
+    },
+    "trust_authenticity": {
+      "required": ["apology", "verification_method", "seller_action"],
+      "optional": ["legal_action_mention"]
+    },
+    "pricing": {
+      "required": ["acknowledgment"],
+      "optional": ["discount_offer", "value_justification"]
+    },
+    "support": {
+      "required": ["apology", "escalation_commitment", "timeline"],
+      "optional": ["agent_name_request"]
+    }
+  },
+  "disclaimers": {
+    "side_effects": "Please discontinue use immediately and consult a qualified healthcare professional. Individual responses to cosmetic products may vary.",
+    "product_quality": "All MosaicWellness products undergo rigorous quality testing. If you have a concern about a specific batch, please share the batch number printed on your packaging.",
+    "trust_authenticity": "Genuine MosaicWellness products carry a unique QR code. Please verify authenticity at our official website."
+  },
+  "escalationInstructions": {
+    "side_effects": "DM your contact details for our medical safety team to reach you directly.",
+    "trust_authenticity": "Please DM us the seller name and your order details so we can take immediate action.",
+    "default": "Please share your order ID via DM so we can resolve this privately and quickly."
+  },
+  "brandVoiceGuidelines": {
+    "empathetic": {
+      "tone": "warm, caring, human",
+      "startWith": ["We understand how frustrating this must be.", "We truly care about your experience.", "Your health and satisfaction come first."],
+      "avoid": ["strict policy language", "passive voice", "corporate jargon"]
+    },
+    "professional": {
+      "tone": "clear, accountable, action-oriented",
+      "startWith": ["Thank you for bringing this to our attention.", "We take your feedback seriously.", "We apologize for the inconvenience."],
+      "avoid": ["excessive informality", "emojis in serious matters"]
+    },
+    "urgent": {
+      "tone": "immediate, decisive, reassuring",
+      "startWith": ["We are treating this as a priority.", "Immediate action is being taken.", "This has been escalated to our senior team."],
+      "avoid": ["vague timelines", "dismissive language"]
+    }
+  }
+}

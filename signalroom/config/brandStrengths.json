@@ -1,0 +1,36 @@
+{
+  "MosaicWellness": {
+    "strengths": [
+      {
+        "id": "leak_proof_packaging",
+        "label": "Leak-proof packaging",
+        "keywords": ["sealed", "no leak", "packaging intact", "well packed", "secure bottle"]
+      },
+      {
+        "id": "fast_delivery",
+        "label": "24h delivery in metros",
+        "keywords": ["fast delivery", "quick delivery", "arrived early", "same day", "next day"]
+      },
+      {
+        "id": "derm_tested",
+        "label": "Dermatologist-tested formulas",
+        "keywords": ["dermatologist", "derm tested", "hypoallergenic", "safe for skin", "no reaction"]
+      },
+      {
+        "id": "authenticity_qr",
+        "label": "QR-code authenticity verification",
+        "keywords": ["genuine product", "authentic", "qr verified", "original", "verified purchase"]
+      },
+      {
+        "id": "responsive_support",
+        "label": "24h customer support",
+        "keywords": ["quick response", "helpful support", "resolved quickly", "great customer service", "fast reply"]
+      },
+      {
+        "id": "clean_ingredients",
+        "label": "Clean / natural ingredients",
+        "keywords": ["natural", "clean ingredients", "no parabens", "chemical free", "organic", "vegan"]
+      }
+    ]
+  }
+}
