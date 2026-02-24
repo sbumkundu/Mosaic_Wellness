@@ -64,9 +64,10 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    const avgSentiment = mentions.reduce((s: number, m) => s + m.sentimentScore, 0) / mentions.length;
-    const negRatio = mentions.filter(m => m.sentimentLabel === "neg").length / mentions.length;
-    const avgEngagement = mentions.reduce((s: number, m) => s + m.engagement, 0) / mentions.length;
+    type MentionRow = (typeof mentions)[number];
+    const avgSentiment = mentions.reduce((s: number, m: MentionRow) => s + m.sentimentScore, 0) / mentions.length;
+    const negRatio = mentions.filter((m: MentionRow) => m.sentimentLabel === "neg").length / mentions.length;
+    const avgEngagement = mentions.reduce((s: number, m: MentionRow) => s + m.engagement, 0) / mentions.length;
 
     const issueCounts = new Map<string, number>();
     for (const m of mentions) {
