@@ -456,6 +456,13 @@ async function upsertMention(m: NormalizedMention): Promise<void> {
     where: { id: m.id },
     update: {
       timestamp: m.timestamp,
+      text: m.text,
+      authorHandle: m.authorHandle,
+      rating: m.rating,
+      engagement: m.engagement,
+      url: m.url,
+      source: m.source,
+      channel: m.channel,
       sentimentScore: m.sentimentScore,
       sentimentLabel: m.sentimentLabel,
       issueLabels: m.issueLabels,
