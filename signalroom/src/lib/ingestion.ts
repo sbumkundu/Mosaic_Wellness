@@ -39,6 +39,23 @@ interface NormalizedMention {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
+/** Shorten full product names into compact heatmap display names.
+ *  e.g. "Be Bodywise Hair Growth Serum Roll On 25ml" → "BB Hair Growth Serum" */
+function normalizeProductName(name: string): string {
+  return name
+    .replace(/^Be Bodywise\s+/i, "BB ")
+    .replace(/^Man Matters\s+/i, "MM ")
+    .replace(/\bRoll\s+On\b/gi, "")
+    .replace(/\bUltra\s+Light\b/gi, "")
+    .replace(/\bAdvanced\b/gi, "")
+    .replace(/\bfor\s+Hair\s*&\s*Skin\b/gi, "")
+    .replace(/\b10%\b/gi, "")
+    .replace(/\s+\d+(?:ml|g|ct)\s*$/i, "")
+    .replace(/\bSPF\d+\+?/gi, "SPF50")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function dataPath(filename: string): string {
   return path.join(process.cwd(), "data", filename);
 }
@@ -161,6 +178,8 @@ async function ingestAmazon(source: string): Promise<number> {
       url: row.url,
     });
 
+    if (row.product) mention.product = normalizeProductName(row.product.toString());
+
     await upsertMention(mention);
     count++;
   }
@@ -188,6 +207,8 @@ async function ingestNykaa(source: string): Promise<number> {
       engagement: parseInt(row.helpful_votes) || 0,
       url: row.url,
     });
+
+    if (row.product) mention.product = normalizeProductName(row.product.toString());
 
     await upsertMention(mention);
     count++;
@@ -315,6 +336,7 @@ async function ingestComplaints(source: string): Promise<number> {
       isSimulated: false,
     });
 
+    if (row.product) mention.product = normalizeProductName(row.product.toString());
     if (row.issue_type) {
       mention.topIssue = row.issue_type;
       mention.issueLabels = JSON.stringify([{ issue: row.issue_type, confidence: 0.95 }]);

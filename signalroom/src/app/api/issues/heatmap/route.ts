@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const source = searchParams.get("source") || "MosaicWellness";
-  const days = parseInt(searchParams.get("days") || "14");
+  const days = parseInt(searchParams.get("days") || "730");
 
   const latestMention = await prisma.mention.findFirst({ where: { source }, orderBy: { timestamp: "desc" }, select: { timestamp: true } });
   const dataEnd = latestMention ? new Date(latestMention.timestamp).getTime() : Date.now();
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   }
 
   const products = Array.from(matrix.keys()).slice(0, 10);
-  const allIssues = ["product_quality", "delivery", "packaging", "pricing", "support", "side_effects", "trust_authenticity"];
+  const allIssues = ["product_quality", "delivery", "packaging", "pricing", "support", "side_effects", "billing", "trust_authenticity"];
 
   const heatmap = products.map(product => {
     const issueMap = matrix.get(product)!;

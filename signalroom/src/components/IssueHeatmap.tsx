@@ -20,16 +20,18 @@ const ISSUE_LABELS: Record<string, string> = {
   pricing: "Price",
   support: "Support",
   side_effects: "Side FX",
+  billing: "Billing",
   trust_authenticity: "Trust",
 };
 
-function intensityToColor(intensity: number): string {
-  if (intensity === 0) return "bg-gray-800/50 text-gray-700";
+function intensityToColor(intensity: number, hasData: boolean): string {
+  if (!hasData) return "bg-gray-800/50 text-gray-700";
+  if (intensity === 0) return "bg-teal-900/70 text-teal-300";
   if (intensity > 0.7) return "bg-red-600 text-white";
   if (intensity > 0.5) return "bg-red-500/80 text-white";
   if (intensity > 0.3) return "bg-orange-500/70 text-white";
   if (intensity > 0.15) return "bg-yellow-600/70 text-white";
-  return "bg-yellow-800/50 text-yellow-200";
+  return "bg-yellow-900/60 text-yellow-300";
 }
 
 function intensityToLabel(v: number): string {
@@ -48,7 +50,7 @@ export default function IssueHeatmap() {
   useEffect(() => {
     const fetch_ = async () => {
       try {
-        const res = await fetch("/api/issues/heatmap?days=14");
+        const res = await fetch("/api/issues/heatmap?days=730");
         const data = await res.json();
         setHeatmap(data.heatmap || []);
         setIssues(data.issues || []);
@@ -66,7 +68,7 @@ export default function IssueHeatmap() {
       <div className="panel-header">
         <h2 className="panel-title">Issue Heatmap</h2>
         <p className="panel-subtitle">
-          Which products have the most complaints — last 14 days · darker = more negative
+          Issue distribution by product · teal = positive · red = negative
         </p>
       </div>
 
@@ -106,7 +108,7 @@ export default function IssueHeatmap() {
                     {row.issues.map(cell => (
                       <td key={cell.issue} className="p-1 text-center">
                         <div
-                          className={`rounded text-[11px] font-mono py-1 px-0.5 ${intensityToColor(cell.intensity)}`}
+                          className={`rounded text-[11px] font-mono py-1 px-0.5 ${intensityToColor(cell.intensity, cell.count > 0)}`}
                           title={`${cell.negCount} negative out of ${cell.count} total (${Math.round(cell.intensity * 100)}% — ${intensityToLabel(cell.intensity)})`}
                         >
                           {cell.count > 0 ? cell.count : ""}
@@ -122,14 +124,15 @@ export default function IssueHeatmap() {
             <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-800">
               <span className="text-[11px] text-gray-500 shrink-0">Risk level:</span>
               {[
-                { v: 0, label: "None" },
-                { v: 0.2, label: "Low" },
-                { v: 0.4, label: "Moderate" },
-                { v: 0.6, label: "High" },
-                { v: 0.8, label: "Critical" },
-              ].map(({ v, label }) => (
+                { v: 0, label: "None", hasData: false },
+                { v: 0, label: "Positive", hasData: true },
+                { v: 0.2, label: "Low", hasData: true },
+                { v: 0.4, label: "Moderate", hasData: true },
+                { v: 0.6, label: "High", hasData: true },
+                { v: 0.8, label: "Critical", hasData: true },
+              ].map(({ v, label, hasData }) => (
                 <div key={v} className="flex items-center gap-1">
-                  <div className={`w-4 h-3 rounded ${intensityToColor(v)}`} />
+                  <div className={`w-4 h-3 rounded ${intensityToColor(v, hasData)}`} />
                   <span className="text-[10px] text-gray-500">{label}</span>
                 </div>
               ))}
