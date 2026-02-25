@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import KPIStrip from "@/components/KPIStrip";
 import LiveFeed from "@/components/LiveFeed";
 import CrisisRadar from "@/components/CrisisRadar";
@@ -10,8 +11,8 @@ import ReplayMode from "@/components/ReplayMode";
 import TrustNarrativeWidget from "@/components/TrustNarrativeWidget";
 import { useRouter } from "next/navigation";
 import {
-  Download, AlertTriangle, BarChart2, Play,
-  Zap, TrendingDown, RefreshCw,
+  AlertTriangle, BarChart2, Play,
+  Zap, TrendingDown, RefreshCw, Download, Settings,
 } from "lucide-react";
 
 // ── Hero strip data ────────────────────────────────────────────────────
@@ -69,8 +70,8 @@ function HeroStrip({ heroData, loading }: { heroData: HeroData | null; loading: 
 
   if (loading) {
     return (
-      <div className="panel p-5 grid grid-cols-1 md:grid-cols-3 gap-px bg-gray-800/40 rounded-xl overflow-hidden animate-pulse">
-        {[...Array(3)].map((_, i) => (
+      <div className="panel p-5 grid grid-cols-1 md:grid-cols-2 gap-px bg-gray-800/40 rounded-xl overflow-hidden animate-pulse">
+        {[...Array(2)].map((_, i) => (
           <div key={i} className="bg-[#111827] p-5 flex flex-col gap-3">
             <div className="h-2.5 w-20 bg-gray-800 rounded" />
             <div className="h-8 w-16 bg-gray-800 rounded" />
@@ -154,7 +155,8 @@ export default function Dashboard() {
   const [ingestResult, setIngestResult] = useState<string | null>(null);
   const [heroData, setHeroData] = useState<HeroData | null>(null);
   const [heroLoading, setHeroLoading] = useState(true);
-  const router = useRouter();
+  const [showAdmin, setShowAdmin] = useState(false);
+  const adminRef = useRef<HTMLDivElement>(null);
 
   const fetchHeroData = async () => {
     try {
@@ -189,9 +191,21 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  // Close admin dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (adminRef.current && !adminRef.current.contains(e.target as Node)) {
+        setShowAdmin(false);
+      }
+    };
+    if (showAdmin) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showAdmin]);
+
   const runIngest = async () => {
     setIngesting(true);
     setIngestResult(null);
+    setShowAdmin(false);
     try {
       const res = await fetch("/api/ingest", { method: "POST" });
       const data = await res.json();
@@ -214,9 +228,9 @@ export default function Dashboard() {
     <div className="min-h-screen bg-[#0a0e1a] flex flex-col">
       {/* ── Top navigation bar ──────────────────────────────────────── */}
       <header className="flex items-center justify-between px-5 py-3 border-b border-gray-800 bg-[#0d1117] sticky top-0 z-30">
-        {/* Brand identity */}
+        {/* Brand identity — clickable logo */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
             <div className="w-7 h-7 rounded-lg bg-cyan-500 flex items-center justify-center font-bold text-black text-sm select-none">
               S
             </div>
@@ -224,7 +238,7 @@ export default function Dashboard() {
               <span className="font-bold text-white tracking-tight text-sm">SignalRoom</span>
               <span className="text-gray-500 text-[10px] mt-0.5">MosaicWellness</span>
             </div>
-          </div>
+          </Link>
 
           <div className="hidden md:flex items-center gap-1.5 text-[11px] text-gray-500 bg-gray-800/60 px-2.5 py-1 rounded-full border border-gray-700/60">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
@@ -247,50 +261,57 @@ export default function Dashboard() {
             </span>
           )}
 
-          <button
-            onClick={runIngest}
-            disabled={ingesting}
-            className="nav-btn"
-            title="Load the latest brand mentions from all channels"
-            aria-label="Load data"
-          >
-            {ingesting ? (
-              <RefreshCw className="w-3 h-3 animate-spin" />
-            ) : (
-              <Download className="w-3 h-3" />
-            )}
-            <span className="hidden sm:inline">{ingesting ? "Loading…" : "Load Data"}</span>
-          </button>
-
-          <button
-            onClick={() => router.push("/incidents")}
-            className="nav-btn"
-            title="Mission Control — incident intelligence dashboard"
-            aria-label="Go to incidents"
-          >
+          {/* Primary nav links */}
+          <Link href="/incidents" className="nav-btn" title="Mission Control — incident intelligence dashboard">
             <AlertTriangle className="w-3 h-3" />
             <span className="hidden sm:inline">Incidents</span>
-          </button>
+          </Link>
 
-          <button
-            onClick={() => router.push("/evaluation")}
-            className="nav-btn"
-            title="Coverage, sentiment breakdown, and data quality metrics"
-            aria-label="Data quality report"
-          >
+          <Link href="/evaluation" className="nav-btn" title="Coverage, sentiment breakdown, and data quality metrics">
             <BarChart2 className="w-3 h-3" />
             <span className="hidden sm:inline">Data Quality</span>
-          </button>
+          </Link>
 
-          <button
-            onClick={() => setReplayOpen(true)}
-            className="nav-btn"
-            title="Replay the last 48 hours of brand mentions at 5× speed"
-            aria-label="Simulate feed replay"
-          >
-            <Play className="w-3 h-3" />
-            <span className="hidden sm:inline">Simulate Feed</span>
-          </button>
+          {/* Admin / developer tools dropdown */}
+          <div className="relative" ref={adminRef}>
+            <button
+              onClick={() => setShowAdmin(v => !v)}
+              className={`nav-btn ${showAdmin ? "bg-gray-700 border-gray-600" : ""}`}
+              title="Admin tools"
+              aria-label="Admin tools"
+              aria-expanded={showAdmin}
+            >
+              <Settings className="w-3 h-3" />
+              <span className="hidden sm:inline">Tools</span>
+            </button>
+
+            {showAdmin && (
+              <div className="admin-dropdown">
+                <p className="admin-dropdown-label">Admin / Dev</p>
+                <button
+                  onClick={runIngest}
+                  disabled={ingesting}
+                  className="admin-dropdown-item"
+                  title="Load the latest brand mentions from all channels"
+                >
+                  {ingesting ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5 shrink-0" />
+                  )}
+                  {ingesting ? "Loading data…" : "Load Data"}
+                </button>
+                <button
+                  onClick={() => { setShowAdmin(false); setReplayOpen(true); }}
+                  className="admin-dropdown-item"
+                  title="Replay the last 48 hours of brand mentions at 5× speed"
+                >
+                  <Play className="w-3.5 h-3.5 shrink-0" />
+                  Simulate Feed
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -301,35 +322,33 @@ export default function Dashboard() {
         {/* ── KPI Strip ───────────────────────────────────────────────── */}
         <KPIStrip />
 
-        {/* ── Main grid ───────────────────────────────────────────────── */}
-        <div className="grid grid-cols-12 gap-4">
-          {/* Live Feed — left */}
-          <div className="col-span-12 md:col-span-4 lg:col-span-3" style={{ minHeight: "480px", maxHeight: "600px", overflow: "hidden" }}>
-            <LiveFeed />
-          </div>
-
-          {/* Crisis Radar — center */}
-          <div className="col-span-12 md:col-span-4 lg:col-span-4" style={{ minHeight: "480px", maxHeight: "600px", overflow: "hidden" }}>
-            <CrisisRadar />
-          </div>
-
-          {/* Issue Heatmap — right */}
-          <div className="col-span-12 md:col-span-4 lg:col-span-5" style={{ minHeight: "480px", maxHeight: "600px", overflow: "hidden" }}>
-            <IssueHeatmap />
-          </div>
-        </div>
-
-        {/* ── Bottom row ──────────────────────────────────────────────── */}
+        {/* ── Row 1: Primary panels — DailyBrief + CrisisRadar ────────── */}
+        {/* These are the two most actionable panels; shown above the fold */}
         <div className="grid grid-cols-12 gap-4">
           <div className="col-span-12 lg:col-span-5">
             <DailyBrief />
           </div>
-          <div className="col-span-12 lg:col-span-4">
-            <CompetitorPanel />
+          <div className="col-span-12 lg:col-span-7" style={{ minHeight: "420px", maxHeight: "560px", overflow: "hidden" }}>
+            <CrisisRadar />
           </div>
-          <div className="col-span-12 lg:col-span-3">
+        </div>
+
+        {/* ── Row 2: Context panels ───────────────────────────────────── */}
+        <div className="grid grid-cols-12 gap-4">
+          <div className="col-span-12 md:col-span-4" style={{ minHeight: "440px", maxHeight: "560px", overflow: "hidden" }}>
+            <LiveFeed />
+          </div>
+          <div className="col-span-12 md:col-span-5" style={{ minHeight: "440px", maxHeight: "560px", overflow: "hidden" }}>
+            <IssueHeatmap />
+          </div>
+          <div className="col-span-12 md:col-span-3">
             <TrustNarrativeWidget />
           </div>
+        </div>
+
+        {/* ── Row 3: Competitive analysis ─────────────────────────────── */}
+        <div>
+          <CompetitorPanel />
         </div>
       </main>
 

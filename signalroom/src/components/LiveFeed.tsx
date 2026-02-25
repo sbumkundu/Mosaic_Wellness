@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 const CHANNEL_ICONS: Record<string, string> = {
   amazon: "📦", nykaa: "💄", google: "⭐", reddit: "🔴",
@@ -76,6 +77,7 @@ export default function LiveFeed({ onSelectMention }: { onSelectMention?: (id: s
   const [filters, setFilters] = useState({
     channel: "", issue: "", sentiment: "", language: "", product: "",
   });
+  const router = useRouter();
 
   const fetchFeed = useCallback(async () => {
     const params = new URLSearchParams();
@@ -93,12 +95,15 @@ export default function LiveFeed({ onSelectMention }: { onSelectMention?: (id: s
 
   useEffect(() => {
     fetchFeed();
-    const interval = setInterval(fetchFeed, 10000);
-    return () => clearInterval(interval);
   }, [fetchFeed]);
 
   const setFilter = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: prev[key as keyof typeof prev] === value ? "" : value }));
+  };
+
+  const markReviewed = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMentions(prev => prev.filter(m => m.id !== id));
   };
 
   const channels = ["amazon", "nykaa", "google", "reddit", "twitter", "instagram"];
@@ -254,6 +259,31 @@ export default function LiveFeed({ onSelectMention }: { onSelectMention?: (id: s
                   <div className="ml-auto" title={`Source credibility score: ${m.credibilityScore}/100`}>
                     <CredibilityBar score={m.credibilityScore} />
                   </div>
+                </div>
+
+                {/* Hover micro-actions */}
+                <div className="hidden group-hover:flex items-center gap-2 mt-1.5 pt-1.5 border-t border-gray-800/60">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); router.push("/incidents"); }}
+                    className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
+                    title="Go to incidents to link this mention"
+                  >
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12l7 7 7-7" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Add to Incident
+                  </button>
+                  <span className="text-gray-700">·</span>
+                  <button
+                    onClick={(e) => markReviewed(m.id, e)}
+                    className="text-[10px] text-gray-500 hover:text-green-400 flex items-center gap-1 transition-colors"
+                    title="Mark as reviewed and remove from feed"
+                  >
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Mark Reviewed
+                  </button>
                 </div>
               </div>
             </div>

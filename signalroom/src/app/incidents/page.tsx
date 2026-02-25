@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import {
   AlertTriangle, Search, RefreshCw, Download,
   ChevronUp, ChevronDown, ChevronsUpDown, X,
-  Package, Radio,
+  Package, Radio, SlidersHorizontal,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { RiskBadge } from "@/components/ui/RiskBadge";
@@ -117,6 +117,8 @@ export default function IncidentsPage() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterSeverity, setFilterSeverity] = useState("");
   const [filterChannel, setFilterChannel] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const filtersRef = useRef<HTMLDivElement>(null);
 
   // Sort
   const [sortKey, setSortKey] = useState<SortKey>("severity");
@@ -126,6 +128,7 @@ export default function IncidentsPage() {
   const searchRef = useRef<HTMLInputElement>(null);
 
   const hasActiveFilters = search || filterStatus || filterSeverity || filterChannel;
+  const activeFilterCount = [filterStatus, filterSeverity, filterChannel].filter(Boolean).length;
 
   const clearFilters = () => {
     setSearch("");
@@ -133,6 +136,17 @@ export default function IncidentsPage() {
     setFilterSeverity("");
     setFilterChannel("");
   };
+
+  // Close filter popover on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) {
+        setShowFilters(false);
+      }
+    };
+    if (showFilters) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showFilters]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -244,44 +258,80 @@ export default function IncidentsPage() {
 
           <div className="w-px h-5 bg-gray-700 shrink-0" />
 
-          {/* Dropdowns */}
-          <select
-            value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value)}
-            className="text-xs bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-2.5 py-1.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-500"
-            aria-label="Filter by status"
-          >
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="investigating">Investigating</option>
-            <option value="resolved">Resolved</option>
-            <option value="dismissed">Dismissed</option>
-          </select>
+          {/* Filters popover */}
+          <div className="relative" ref={filtersRef}>
+            <button
+              onClick={() => setShowFilters(v => !v)}
+              className={`nav-btn ${showFilters ? "bg-gray-700 border-gray-600" : ""}`}
+              aria-label="Toggle filters"
+              aria-expanded={showFilters}
+            >
+              <SlidersHorizontal className="w-3 h-3" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="ml-0.5 bg-cyan-500 text-black text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
 
-          <select
-            value={filterSeverity}
-            onChange={e => setFilterSeverity(e.target.value)}
-            className="text-xs bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-2.5 py-1.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-500"
-            aria-label="Filter by severity"
-          >
-            <option value="">All Severity</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-
-          <select
-            value={filterChannel}
-            onChange={e => setFilterChannel(e.target.value)}
-            className="text-xs bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-2.5 py-1.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-500"
-            aria-label="Filter by channel"
-          >
-            <option value="">All Channels</option>
-            {["amazon", "nykaa", "google", "reddit", "twitter", "instagram", "complaints"].map(c => (
-              <option key={c} value={c}>{CHANNEL_ICONS[c]} {c}</option>
-            ))}
-          </select>
+            {showFilters && (
+              <div className="filters-popover">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Status</label>
+                  <select
+                    value={filterStatus}
+                    onChange={e => setFilterStatus(e.target.value)}
+                    className="text-xs bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-2.5 py-1.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-500"
+                    aria-label="Filter by status"
+                  >
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="investigating">Investigating</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="dismissed">Dismissed</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Severity</label>
+                  <select
+                    value={filterSeverity}
+                    onChange={e => setFilterSeverity(e.target.value)}
+                    className="text-xs bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-2.5 py-1.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-500"
+                    aria-label="Filter by severity"
+                  >
+                    <option value="">All Severity</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Channel</label>
+                  <select
+                    value={filterChannel}
+                    onChange={e => setFilterChannel(e.target.value)}
+                    className="text-xs bg-gray-800 border border-gray-700 text-gray-300 rounded-lg px-2.5 py-1.5 cursor-pointer focus-visible:ring-2 focus-visible:ring-cyan-500"
+                    aria-label="Filter by channel"
+                  >
+                    <option value="">All Channels</option>
+                    {["amazon", "nykaa", "google", "reddit", "twitter", "instagram", "complaints"].map(c => (
+                      <option key={c} value={c}>{CHANNEL_ICONS[c]} {c}</option>
+                    ))}
+                  </select>
+                </div>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={() => { clearFilters(); setShowFilters(false); }}
+                    className="text-[11px] text-gray-400 hover:text-red-400 flex items-center gap-1 transition-colors mt-1"
+                  >
+                    <X className="w-3 h-3" /> Clear all filters
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {hasActiveFilters && (
             <button
